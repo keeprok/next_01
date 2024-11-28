@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 /** UI 컴포넌트 */
+import MarkdownEditor from "@uiw/react-markdown-editor";
 import { MarkdownEditorDialog } from "@/components/common";
 import { Button, Card, Checkbox, LabelDatePicker, Separator } from "@/components/ui";
 import { useDeleteBoard } from "@/hooks/api";
@@ -24,7 +25,13 @@ function BoardCard({ board }: Props) {
             <div className="w-full flex items-center justify-between mb-4">
                 <div className="w-full flex items-center justify-start gap-2">
                     <Checkbox className="h-5 w-5" checked={board.isCompleted} />
-                    <input type="text" placeholder="등록된 제목이 없습니다." value={board.title} className="w-full text-xl outline-none bg-transparent" disabled={true} />
+                    <input
+                        type="text"
+                        placeholder="등록된 제목이 없습니다."
+                        value={board.title}
+                        className="w-full text-xl outline-none bg-transparent"
+                        disabled={true}
+                    />
                 </div>
                 <Button variant={"ghost"} size={"icon"}>
                     <ChevronUp className="text-[#6d6d6d]" />
@@ -47,6 +54,7 @@ function BoardCard({ board }: Props) {
                     </Button>
                 </div>
             </div>
+            <MarkdownEditor className="w-full" value={board.content} />
             <Separator className="my-3" />
             {/* Add Contents 버튼 영역 */}
             <MarkdownEditorDialog board={board}>

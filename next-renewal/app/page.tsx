@@ -1,22 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
 import { userAtom } from "@/stores/atoms";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import useEmailCheck from "@/hooks/use-email";
 /** UI 컴포넌트 */
+import { FindPasswordPopup } from "@/components/common";
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Input, Label } from "@/components/ui";
 import { Eye, EyeOff } from "@/public/assets/icons";
 
 function LoginPage() {
-    const supabase = createClient();
     const router = useRouter();
+    const [, setUser] = useAtom(userAtom);
     const { checkEmail } = useEmailCheck();
-    const [user, setUser] = useAtom(userAtom);
     /** 회원가입에 필요한 상태 값 */
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
@@ -31,7 +31,7 @@ function LoginPage() {
                 title: "기입되지 않은 데이터(값)가 있습니다.",
                 description: "이메일과 비밀번호는 필수 값입니다.",
             });
-            return; // 필수 값이 기입되지 않은 경우, 추가 작업하지 않고 리턴
+            return; // 필수 값이 입력되지 않은 경우라면, 추가 작업은 하지 않고 리턴
         }
 
         if (!checkEmail(email)) {
@@ -60,15 +60,22 @@ function LoginPage() {
                     title: "로그인을 성공하였습니다.",
                     description: "자유롭게 TASK 관리를 해주세요!",
                 });
-                console.log(data);
-                router.push("/board"); // 로그인 페이지로 이동
-                // Jotai의 user에 관련된 상태 값을 업데이트
-                setUser({
+
+                /** 쿠키에 저장할 user 데이터 */
+                const userData = {
                     id: data.user?.id || "",
                     email: data.user?.email || "",
-                    phone: data.user?.phone || "",
+                    phoneNumber: data.user?.user_metadata.phoneNumber || "",
+                    nickname: data.user?.user_metadata.nickname || "",
                     imgUrl: "/assets/images/profile.jpg",
-                });
+                };
+                document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=3600`; // 1시간 동안 유효
+
+                // Jotai의 user에 관련된 상태 값을 업데이트
+                setUser(userData);
+                setTimeout(() => {
+                    router.push("/board"); // 로그인 페이지로 이동
+                }, 1000);
             }
         } catch (error) {
             /** 네트워크 오류나 예기치 않은 에러를 잡기 위해 catch 구문 사용 */
@@ -80,6 +87,12 @@ function LoginPage() {
             });
         }
     };
+
+    useEffect(() => {
+        /** 로컬스토리지에 user 데이터 유무 체크 후 리다이렉션 */
+        const user = localStorage.getItem("user");
+        if (user) router.push("/board");
+    }, [router]);
 
     return (
         <div className="page">
@@ -102,17 +115,35 @@ function LoginPage() {
                     <CardContent className="grid gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="email">이메일</Label>
-                            <Input id="email" type="email" placeholder="이메일을 입력하세요." required value={email} onChange={(event) => setEmail(event.target.value)} />
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="이메일을 입력하세요."
+                                required
+                                value={email}
+                                onChange={(event) => setEmail(event.target.value)}
+                            />
                         </div>
                         <div className="relative grid gap-2">
                             <div className="flex items-center">
                                 <Label htmlFor="password">비밀번호</Label>
-                                <Link href={"#"} className="ml-auto inline-block text-sm underline">
-                                    비밀번호를 잊으셨나요?
-                                </Link>
+                                <FindPasswordPopup>
+                                    <p className="ml-auto inline-block text-sm underline cursor-pointer">비밀번호를 잊으셨나요?</p>
+                                </FindPasswordPopup>
                             </div>
-                            <Input id="password" type={showPassword ? "text" : "password"} placeholder="비밀번호를 입력하세요." required value={password} onChange={(event) => setPassword(event.target.value)} />
-                            <Button size={"icon"} className="absolute top-[38px] right-2 -translate-y-1/4 bg-transparent hover:bg-transparent" onClick={togglePassword}>
+                            <Input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="비밀번호를 입력하세요."
+                                required
+                                value={password}
+                                onChange={(event) => setPassword(event.target.value)}
+                            />
+                            <Button
+                                size={"icon"}
+                                className="absolute top-[38px] right-2 -translate-y-1/4 bg-transparent hover:bg-transparent"
+                                onClick={togglePassword}
+                            >
                                 {showPassword ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <Eye className="h-5 w-5 text-muted-foreground" />}
                             </Button>
                         </div>
@@ -126,7 +157,10 @@ function LoginPage() {
                         </div>
                     </div>
                     <CardFooter className="flex flex-col mt-6">
-                        <Button className="w-full text-white bg-[#E79057] hover:bg-[#E26F24] hover:ring-1 hover:ring-[#E26F24] hover:ring-offset-1 active:bg-[#D5753D] hover:shadow-lg" onClick={handleLogin}>
+                        <Button
+                            className="w-full text-white bg-[#E79057] hover:bg-[#E26F24] hover:ring-1 hover:ring-[#E26F24] hover:ring-offset-1 active:bg-[#D5753D] hover:shadow-lg"
+                            onClick={handleLogin}
+                        >
                             로그인
                         </Button>
                         <div className="mt-4 text-center text-sm">

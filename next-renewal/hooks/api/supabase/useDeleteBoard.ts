@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabase";
+"use client";
+
+import { supabase } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useGetTaskById } from "@/hooks/api";
 import { useAtom } from "jotai";
